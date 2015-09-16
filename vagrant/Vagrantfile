@@ -8,10 +8,10 @@
 Vagrant.configure(2) do |config|
   config.vm.box = "scotch/box"
   config.vm.network "private_network", ip: "192.168.33.10"
-  config.vm.synced_folder "../public", "/var/www/public", :mount_options => ["dmode=777", "fmode=666"]
+  config.vm.synced_folder "../public", "/var/www/public", :mount_options => ["dmode=777", "fmode=666"], create: true
   config.vm.provider "virtualbox" do |vb|
     vb.memory = "2048"
-    vb.cpus = "2"
+    vb.cpus = "4"
     vb.name = "shopware_vm"
   end
   config.vm.provision "shell", inline: <<-SHELL
@@ -24,15 +24,12 @@ Vagrant.configure(2) do |config|
 
 
   # Get Shopware
-  # wget http://releases.s3.shopware.com.s3.amazonaws.com/install_5.0.3_64a91b5fae65b7970a9e02b2a13f1733a4c5c6cb.zip -O /tmp/shopware.zip
-  # unzip /tmp/shopware.zip -d /var/www/public/
-  # rm /tmp/shopware.zip
   git clone https://github.com/shopware/shopware.git /var/www/public
   cd /var/www/public/build/
   sudo cp /vagrant/build.properties /var/www/public/build/
   ant build-unit
   # demo data
-  sudo wget -O /var/www/public/test_images.zip http://releases.s3.shopware.com/test_images.zip
+  sudo wget --quiet -O /var/www/public/test_images.zip http://releases.s3.shopware.com/test_images.zip
   sudo unzip -q /var/www/public/test_images.zip -d /var/www/public/
   sudo rm /var/www/public/test_images.zip
 
@@ -43,8 +40,11 @@ Vagrant.configure(2) do |config|
   sudo cp /vagrant/20-xdebug.ini /etc/php5/apache2/conf.d/
 
   #get phpunit
-  sudo wget https://phar.phpunit.de/phpunit.phar -O/usr/bin/phpunit
+  sudo wget --quiet https://phar.phpunit.de/phpunit.phar -O/usr/bin/phpunit
   sudo chmod +x /usr/bin/phpunit
+
+  #get php apcu
+  sudo apt-get install php5-apcu
 
   sudo service apache2 restart
   SHELL

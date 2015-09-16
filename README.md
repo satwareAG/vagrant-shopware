@@ -5,5 +5,5 @@ Brings up a vagrant based VM containing
 * Shopware GIT Release
 * PHPUnit
 
-This development system is used by [https://satware.com](satware AG)
+This development system is used by [satware AG](https://satware.com)
 for Plugin development.
