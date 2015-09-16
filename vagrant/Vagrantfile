@@ -1,0 +1,51 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure(2) do |config|
+  config.vm.box = "scotch/box"
+  config.vm.network "private_network", ip: "192.168.33.10"
+  config.vm.synced_folder "../public", "/var/www/public", :mount_options => ["dmode=777", "fmode=666"]
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = "2048"
+    vb.cpus = "2"
+    vb.name = "shopware_vm"
+  end
+  config.vm.provision "shell", inline: <<-SHELL
+  sudo apt-get update
+  #create empty db
+  mysql -uroot -proot < /vagrant/create_empty_db.sql
+  #ant Build system
+  sudo apt-get -y install default-jdk
+  sudo apt-get -y install ant
+
+
+  # Get Shopware
+  # wget http://releases.s3.shopware.com.s3.amazonaws.com/install_5.0.3_64a91b5fae65b7970a9e02b2a13f1733a4c5c6cb.zip -O /tmp/shopware.zip
+  # unzip /tmp/shopware.zip -d /var/www/public/
+  # rm /tmp/shopware.zip
+  git clone https://github.com/shopware/shopware.git /var/www/public
+  cd /var/www/public/build/
+  sudo cp /vagrant/build.properties /var/www/public/build/
+  ant build-unit
+  # demo data
+  sudo wget -O /var/www/public/test_images.zip http://releases.s3.shopware.com/test_images.zip
+  sudo unzip -q /var/www/public/test_images.zip -d /var/www/public/
+  sudo rm /var/www/public/test_images.zip
+
+  sudo cp /vagrant/user.ini /etc/php5/apache2/conf.d/user.ini
+
+  # get xdebug
+  sudo apt-get -y install php5-xdebug
+  sudo cp /vagrant/20-xdebug.ini /etc/php5/apache2/conf.d/
+
+  #get phpunit
+  sudo wget https://phar.phpunit.de/phpunit.phar -O/usr/bin/phpunit
+  sudo chmod +x /usr/bin/phpunit
+
+  sudo service apache2 restart
+  SHELL
+end
