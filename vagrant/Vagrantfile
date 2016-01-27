@@ -54,6 +54,6 @@ Vagrant.configure(2) do |config|
     sudo service apache2 restart
 
     # rsync to src directory
-    sudo rsync -a /var/www/public/ /var/www/src --exclude=/media/ --exclude=/cache/ --exclude=/var/
+    sudo rsync -a /var/www/public/ /var/www/src --exclude=/media/ --exclude=/.git/ --exclude=/cache/ --exclude=/var/
   SHELL
 end
