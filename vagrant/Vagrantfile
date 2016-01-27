@@ -8,44 +8,52 @@
 Vagrant.configure(2) do |config|
   config.vm.box = "scotch/box"
   config.vm.network "private_network", ip: "192.168.33.10"
-  config.vm.synced_folder "../public", "/var/www/public", :mount_options => ["dmode=777", "fmode=666"], create: true
+  # config.vm.synced_folder "../src", "/var/www/src", :mount_options => ["dmode=777", "fmode=666"], create: true
   config.vm.provider "virtualbox" do |vb|
     vb.memory = "1024"
     vb.cpus = "2"
     vb.name = "shopware_vm"
   end
   config.vm.provision "shell", inline: <<-SHELL
-  sudo apt-get update
-  #create empty db
-  mysql -uroot -proot < /vagrant/create_empty_db.sql
-  #ant Build system
-  sudo apt-get -y install default-jdk
-  sudo apt-get -y install ant
+    # Install the needed software
+    sudo apt-get update
+    # ant Build system
+    sudo apt-get -y install default-jdk
+    sudo apt-get -y install ant
+    #get php apcu
+    sudo apt-get install php5-apcu
+    # get xdebug
+    sudo apt-get -y install php5-xdebug
+    #get phpunit
+    sudo wget --quiet https://phar.phpunit.de/phpunit.phar -O/usr/bin/phpunit
+    sudo chmod +x /usr/bin/phpunit
 
+    #create empty db
+    mysql -uroot -proot < /vagrant/create_empty_db.sql
 
-  # Get Shopware
-  git clone https://github.com/shopware/shopware.git /var/www/public
-  cd /var/www/public/build/
-  sudo cp /vagrant/build.properties /var/www/public/build/
-  ant build-unit
-  # demo data
-  sudo wget --quiet -O /var/www/public/test_images.zip http://releases.s3.shopware.com/test_images.zip
-  sudo unzip -q /var/www/public/test_images.zip -d /var/www/public/
-  sudo rm /var/www/public/test_images.zip
+    # Get Shopware
+    git clone https://github.com/shopware/shopware.git /var/www/public
+    cd /var/www/public/build/
+    sudo cp /vagrant/build.properties /var/www/public/build/
+    sudo ant build-unit
 
-  sudo cp /vagrant/user.ini /etc/php5/apache2/conf.d/user.ini
+    # Insert the Version from Git
+    sudo cp /vagrant/build-version.xml /var/www/public/build/
+    sudo ant -f build-version.xml
+    # demo data
+    sudo wget --quiet -O /var/www/public/test_images.zip http://releases.s3.shopware.com/test_images.zip
+    sudo unzip -q /var/www/public/test_images.zip -d /var/www/public/
+    sudo rm /var/www/public/test_images.zip
 
-  # get xdebug
-  sudo apt-get -y install php5-xdebug
-  sudo cp /vagrant/20-xdebug.ini /etc/php5/apache2/conf.d/
+    # php.ini addons
+    sudo cp /vagrant/user.ini /etc/php5/apache2/conf.d/user.ini
+    sudo cp /vagrant/20-xdebug.ini /etc/php5/apache2/conf.d/
 
-  #get phpunit
-  sudo wget --quiet https://phar.phpunit.de/phpunit.phar -O/usr/bin/phpunit
-  sudo chmod +x /usr/bin/phpunit
+    # update access rights
+    sudo chmod -R 777 /var/www/public/
+    sudo service apache2 restart
 
-  #get php apcu
-  sudo apt-get install php5-apcu
-
-  sudo service apache2 restart
+    # rsync to src directory
+    sudo rsync -a /var/www/public/ /var/www/src --exclude=/media/ --exclude=/cache/ --exclude=/var/
   SHELL
 end
