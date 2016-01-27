@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project name="ShopwareVersion" basedir="../" default="build-version">
+
+    <property name="build.dir" location="${basedir}/build"/>
+    <target name="build-version">
+
+        <exec executable="git" outputproperty="git.revision" failifexecutionfails="false" errorproperty="">
+            <arg value="describe"/>
+            <arg value="--tags"/>
+            <arg value="--always"/>
+            <arg value="HEAD"/>
+            <arg value="--abbrev=0"/>
+        </exec>
+
+
+        <scriptdef name="substring" language="javascript">
+            <attribute name="text" />
+            <attribute name="start" />
+            <attribute name="end" />
+            <attribute name="property" />
+            <![CDATA[
+       var text = attributes.get("text");
+       var start = attributes.get("start");
+       var end = attributes.get("end") || text.length();
+       project.setProperty(attributes.get("property"), text.substring(start, end));
+     ]]>
+        </scriptdef>
+
+
+        <substring text="${git.revision}" start="1" property="git.revision" />
+        <echo message="Shopware Version ${git.revision}" />
+
+
+        <tstamp>
+            <format property="TODAY_DE" pattern="yyyyMMddHHmm" locale="de,DE"/>
+        </tstamp>
+
+        <replace>
+            <fileset dir="${basedir}">
+                <include name="engine/Shopware/Application.php" />
+                <include name="recovery/install/data/version" />
+            </fileset>
+
+            <replacefilter token="___VERSION___"      value="${git.revision}" />
+            <replacefilter token="___VERSION_TEXT___" value="" />
+            <replacefilter token="___REVISION___"     value="${TODAY_DE}" />
+        </replace>
+    </target>
+</project>

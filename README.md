@@ -6,4 +6,6 @@ Brings up a vagrant based VM containing
 * PHPUnit
 
 This development system is used by [satware AG](https://satware.com)
-for Plugin development.
+for shopware plugin development and tests.
+
+
